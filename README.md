@@ -78,20 +78,22 @@ GET /health
 
 ## Architecture
 
-\`\`\`
-├── backend/
-│   └── src/
-│       ├── config/db.js              → connexion MongoDB
-│       ├── routes/products.routes.js → définition des routes
-│       ├── controllers/              → logique HTTP
-│       ├── services/                 → logique métier + requêtes MongoDB
-│       ├── middlewares/              → validation, gestion d'erreurs
-│       └── utils/buildFilter.js     → construction des filtres MongoDB
-├── frontend/
-│   └── src/
-│       ├── api/products.api.js       → appels fetch centralisés
-│       ├── hooks/useProducts.js      → logique état + fetch
-│       └── components/               → ProductCard, ProductGrid, Pagination
-└── mongo-seed/
-    └── seed.js                       → 5000 produits générés
-\`\`\`
+**Backend**
+- `src/config/db.js` → connexion MongoDB native
+- `src/routes/products.routes.js` → définition des routes
+- `src/controllers/products.controller.js` → logique HTTP
+- `src/services/products.service.js` → logique métier + requêtes MongoDB
+- `src/middlewares/validateQuery.js` → validation des paramètres
+- `src/middlewares/errorHandler.js` → gestion d'erreurs globale
+- `src/utils/buildFilter.js` → construction des filtres MongoDB
+
+**Frontend**
+- `src/api/products.api.js` → appels fetch centralisés
+- `src/hooks/useProducts.js` → logique état + fetch
+- `src/components/ProductCard.jsx` → carte produit
+- `src/components/ProductGrid.jsx` → grille de produits
+- `src/components/Pagination.jsx` → navigation entre pages
+
+**Base de données**
+- `mongo-seed/seed.js` → 5000 produits générés au démarrage
+
