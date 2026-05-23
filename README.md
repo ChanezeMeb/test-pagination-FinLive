@@ -1,62 +1,99 @@
-# Cahier des charges — Test technique
+# FinLive Shop — Test technique
 
-## 1. Contexte
+Application e-commerce avec pagination côté serveur, filtres et tris.
 
-L’entreprise est une **plateforme e‑commerce** (mode, accessoires, etc.) avec un **gros catalogue**. Aujourd’hui, le site charge **tout le catalogue d’un coup** : temps de chargement élevé, charge inutile côté navigateur et risque de mauvaise expérience utilisateur.
+## Stack technique
 
-**Objectif du test :** concevoir une solution **paginée côté serveur**, avec **filtres** et **tris**, une gestion des erreurs, et une stack imposée.
+- **Frontend** : React + Vite
+- **Backend** : Node.js + Express
+- **Base de données** : MongoDB (driver natif, sans Mongoose)
+- **Docker** : 3 services (frontend, backend, mongo)
 
----
+## Lancer le projet
 
-## 2. Problème à résoudre
+\`\`\`bash
+docker compose up --build
+\`\`\`
 
+| Service  | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend  | http://localhost:3001 |
 
-| Axes                        | Description                                                                                                       |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **Performance**             | Ne plus renvoyer ni afficher l’intégralité des articles en une seule requête / un seul rendu.                     |
-| **Fonctionnalité**          | Permettre la navigation dans le catalogue (pagination **ou** scroll infini **ou** équivalent — libre choix d’UX). |
-| **Recherche / exploration** | **Filtrer** (ex. par catégorie) et **trier** (ex. prix croissant / décroissant).                                  |
-| **Fiabilité**               | Pas de crash en cas de paramètres invalides, réseau instable ou réponse vide.                                     |
+## API
 
+### Endpoint principal
 
----
+\`\`\`
+GET /api/products
+\`\`\`
 
-## 3. Périmètre fonctionnel
+### Paramètres disponibles
 
+| Paramètre | Type | Description | Exemple |
+|---|---|---|---|
+| page | entier | Numéro de page (défaut: 1) | page=2 |
+| limit | entier | Produits par page, max 100 (défaut: 12) | limit=6 |
+| sortBy | string | Champ de tri : price, name, createdAt | sortBy=price |
+| order | string | Sens du tri : asc ou desc | order=asc |
+| category | string | shoes, clothing, accessories, bags | category=shoes |
+| minPrice | nombre | Prix minimum | minPrice=50 |
+| maxPrice | nombre | Prix maximum | maxPrice=200 |
 
-| Exigence       | Détail                                                                                                                                                   |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pagination** | Stratégie au choix (pages numérotées, « charger plus », scroll infini…) **à condition** que les données soient chargées **par blocs** depuis le backend. |
-| **Filtres**    | Au minimum un filtre pertinent sur le catalogue (ex. catégorie) ; possibilité d’en ajouter d’autres si le temps le permet.                               |
-| **Tris**       | Au minimum un tri sur un champ numérique ou textuel (ex. **prix** asc / desc).                                                                           |
+### Exemples de requêtes
 
+\`\`\`bash
+# Tous les produits
+GET /api/products
 
----
+# Page 2 avec 6 produits par page
+GET /api/products?page=2&limit=6
 
-## 4. Contraintes techniques (obligatoires)
+# Chaussures triées par prix croissant
+GET /api/products?category=shoes&sortBy=price&order=asc
 
+# Fourchette de prix
+GET /api/products?minPrice=50&maxPrice=200
 
-| Couche              | Technologie                             |
-| ------------------- | --------------------------------------- |
-| **Frontend**        | **React** (JavaScript ou TypeScript)    |
-| **Backend**         | **Node.js** avec **Express** (JS ou TS) |
-| **Base de données** | **MongoDB** — **sans Mongoose**         |
+# Vérifier que le serveur tourne
+GET /health
+\`\`\`
 
+### Format de réponse
 
-Le reste (outillage, structure des dossiers, librairies UI) est laissé au candidat, dans la mesure où les exigences ci-dessus sont respectées.
+\`\`\`json
+{
+  "success": true,
+  "data": [...],
+  "pagination": {
+    "total": 5000,
+    "page": 1,
+    "limit": 12,
+    "totalPages": 417,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  }
+}
+\`\`\`
 
----
+## Architecture
 
-## 5. Livrables attendus
+**Backend**
+- `src/config/db.js` → connexion MongoDB native
+- `src/routes/products.routes.js` → définition des routes
+- `src/controllers/products.controller.js` → logique HTTP
+- `src/services/products.service.js` → logique métier + requêtes MongoDB
+- `src/middlewares/validateQuery.js` → validation des paramètres
+- `src/middlewares/errorHandler.js` → gestion d'erreurs globale
+- `src/utils/buildFilter.js` → construction des filtres MongoDB
 
-- API REST (ou équivalent **documenté**) exposant une **liste d’articles paginée**, avec paramètres documentés : `page`, `limit`, filtres, etc..
-- Frontend connecté à cette API, avec l’UX de pagination / chargement choisie.
-- Gestion des cas limites : valeurs de pagination invalides, liste vide, erreur serveur, etc...
+**Frontend**
+- `src/api/products.api.js` → appels fetch centralisés
+- `src/hooks/useProducts.js` → logique état + fetch
+- `src/components/ProductCard.jsx` → carte produit
+- `src/components/ProductGrid.jsx` → grille de produits
+- `src/components/Pagination.jsx` → navigation entre pages
 
----
-
-## 6. Hors périmètre / libertés
-
-- **Design graphique :** libre (sobriété suffisante pour un test).
-- **Modalité d’interaction** (boutons vs scroll infini, etc.) : libre, tant que le chargement reste **incrémental côté serveur**.
+**Base de données**
+- `mongo-seed/seed.js` → 5000 produits générés au démarrage
 
